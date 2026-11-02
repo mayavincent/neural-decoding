@@ -87,7 +87,16 @@ data/                  raw data (gitignored)
 
 ## Notes and findings
 
-*(Answer the questions at the end of `01_explore.py` here.)*
+**Day 1, exploration (182 neurons, 2,295 reaches).** Single-trial spiking is sparse
+and noisy, so decoding has to rely on the combined activity of many neurons rather
+than any one cell. Averaged across trials, neurons begin increasing their firing
+about 200 ms *before* movement onset, and many are directionally tuned (e.g.,
+neuron 181 fires roughly twice as much for upward reaches as for down-left ones);
+their responses first rise together, then diverge by direction. Across the
+population, neurons peak in sequence from before to after movement onset, so the
+population tracks the reach as it unfolds (with the caveat that sorting by peak
+time exaggerates this pattern somewhat). Because maze reaches curve around
+barriers, I decode continuous hand velocity rather than a single reach-direction label.
 
 ## Limitations
 
