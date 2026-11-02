@@ -79,7 +79,7 @@ def load_session(path):
         nwb = io.read()
 
         units = nwb.units
-        spike_times = [np.asarray(units["spike_times"][i]) for i in range(len(units))]
+        spike_times = [np.sort(np.asarray(units["spike_times"][i])) for i in range(len(units))]
 
         hand_pos, hand_t = _get_series(nwb, "hand_pos")
         hand_vel, vel_t = _get_series(nwb, "hand_vel")
@@ -102,6 +102,9 @@ def load_session(path):
 
 
 def _add_move_onset(trials):
+    if "success" in trials.columns:
+        # Keep only reaches the monkey completed correctly.
+        trials = trials[trials["success"].astype(bool)]
     for col in ("move_onset_time", "move_begins_time", "go_cue_time"):
         if col in trials.columns:
             if col == "go_cue_time":
@@ -124,7 +127,9 @@ def bin_spikes(spike_times, t_start, t_stop, bin_size=0.02):
     # (np.arange with float steps can be off by one from rounding).
     n_bins = int(round((t_stop - t_start) / bin_size))
     edges = t_start + np.arange(n_bins + 1) * bin_size
-    counts = np.stack([np.histogram(st, edges)[0] for st in spike_times], axis=1)
+    # searchsorted on sorted spike times counts spikes per bin without scanning
+    # the whole recording each time (the session is ~2 hours long).
+    counts = np.stack([np.diff(np.searchsorted(st, edges)) for st in spike_times], axis=1)
     centers = edges[:-1] + bin_size / 2
     return counts, centers
 
@@ -137,14 +142,21 @@ def sample_at(t_query, t, values):
 def reach_directions(session, window=0.5, n_dirs=8):
     """Label each trial by reach direction.
 
-    Uses hand displacement from movement onset to `window` seconds later, and
-    sorts the angle into n_dirs equal sectors (0 = rightward, counting
+    Uses the target's position when available (otherwise hand displacement from
+    movement onset to `window` seconds later), and sorts the angle into n_dirs equal sectors (0 = rightward, counting
     counter-clockwise). Returns (angles_rad, direction_labels).
     """
-    onset = session.trials["move_onset"].to_numpy()
-    start = sample_at(onset, session.hand_t, session.hand_pos)
-    end = sample_at(onset + window, session.hand_t, session.hand_pos)
-    d = end - start
+    trials = session.trials
+    if {"target_pos", "active_target"} <= set(trials.columns):
+        # Maze reaches curve around barriers, so use where the target was
+        # (the task is center-out: reaches start near the screen center).
+        d = np.array([np.asarray(tp)[int(at)][:2] for tp, at
+                      in zip(trials["target_pos"], trials["active_target"])], dtype=float)
+    else:
+        onset = trials["move_onset"].to_numpy()
+        start = sample_at(onset, session.hand_t, session.hand_pos)
+        end = sample_at(onset + window, session.hand_t, session.hand_pos)
+        d = end - start
     angles = np.arctan2(d[:, 1], d[:, 0])
     sector = 2 * np.pi / n_dirs
     labels = np.floor(((angles + sector / 2) % (2 * np.pi)) / sector).astype(int)

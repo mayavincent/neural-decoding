@@ -57,14 +57,14 @@ def plot_population_heatmap(rates, t_rel, smooth_bins=2, ax=None):
     return ax
 
 
-def plot_trajectories(session, labels, window=0.6, max_trials=200, ax=None):
+def plot_trajectories(session, labels, window=0.8, max_trials=200, ax=None):
     """Hand paths from movement onset, colored by reach direction."""
     ax = ax or plt.gca()
     colors = _direction_colors(len(DIRECTION_NAMES))
     onsets = session.trials["move_onset"].to_numpy()
     for i in range(min(len(onsets), max_trials)):
-        m = (session.hand_t >= onsets[i]) & (session.hand_t <= onsets[i] + window)
-        xy = session.hand_pos[m]
+        a, b = np.searchsorted(session.hand_t, [onsets[i], onsets[i] + window])
+        xy = session.hand_pos[a:b]
         if len(xy) == 0:
             continue
         xy = xy - xy[0]  # start every reach at the origin

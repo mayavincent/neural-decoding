@@ -38,6 +38,7 @@ push. Use a branch per day so each step stays reviewable, for example
 **3. Download the data** (~700 MB, a few minutes)
 
 ```bash
+mkdir data
 dandi download DANDI:000128 -o data
 ```
 
