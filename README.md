@@ -8,95 +8,52 @@ filter) against deep learning.
 hosted on the DANDI Archive (dandiset 000128). Monkey J reached through a maze
 to targets while neurons in primary motor and dorsal premotor cortex were recorded.
 
-> This README is a working template. Replace it with your final write-up on Day 7.
+## Exploration findings
 
----
+**Dataset:** 182 neurons, 2,295 reaches.
+
+Single-trial spiking is sparse and noisy, so decoding has to rely on the
+combined activity of many neurons rather than any one cell. Averaged across
+trials, neurons begin increasing their firing about 200 ms *before* movement
+onset, and many are directionally tuned (e.g., neuron 181 fires roughly twice
+as much for upward reaches as for down-left ones); their responses first rise
+together, then diverge by direction. Across the population, neurons peak in
+sequence from before to after movement onset, so the population tracks the
+reach as it unfolds (with the caveat that sorting by peak time exaggerates this
+pattern somewhat). Because maze reaches curve around barriers, I decode
+continuous hand velocity rather than a single reach-direction label.
+
+| | |
+|---|---|
+| ![Spike raster](figures/01_raster.png) | ![PSTH by direction](figures/02_psth.png) |
+| ![Population activity](figures/03_population.png) | ![Hand trajectories](figures/04_trajectories.png) |
 
 ## Setup
 
-**1. Python environment** (Python 3.11 or newer)
+Requires Python 3.11 or newer.
 
 ```bash
-cd neural-decoding
 python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-```
 
-**2. Git**
-
-```bash
-git init
-git add .
-git commit -m "Project setup and Day 1 exploration code"
-```
-
-Then create an empty repo on GitHub (no README) and follow its instructions to
-push. Use a branch per day so each step stays reviewable, for example
-`git checkout -b day2-preprocessing`, then merge into main when the day's work runs.
-
-**3. Download the data** (~700 MB, a few minutes)
-
-```bash
 mkdir data
-dandi download DANDI:000128 -o data
+dandi download DANDI:000128 -o data   # ~700 MB
+
+python src/inspect_nwb.py             # optional: print the file's contents
+python notebooks/01_explore.py        # exploration figures -> figures/
 ```
-
-You should end up with `data/000128/sub-Jenkins/...desc-train_behavior+ecephys.nwb`
-(the file with behavior) and a much smaller test file we won't use.
-
-**4. Check the file layout**
-
-```bash
-python src/inspect_nwb.py
-```
-
-This prints the neurons, time series and trial columns. If the loader in
-`src/data.py` ever complains about a missing field, this tells you its real name.
-
-**5. Run Day 1**
-
-```bash
-python notebooks/01_explore.py
-```
-
-Or open the file in VS Code and run it cell by cell. Figures land in `figures/`.
-
----
 
 ## Project structure
 
 ```
-src/data.py            load NWB file, bin spikes, align trials, label directions
-src/plots.py           raster, PSTH, population heatmap, trajectories
-src/inspect_nwb.py     print what's inside the NWB file
-notebooks/01_explore.py  Day 1 exploration
-figures/               saved plots
-data/                  raw data (gitignored)
+src/data.py              load NWB file, bin spikes, align trials, label directions
+src/plots.py             raster, PSTH, population heatmap, trajectories
+src/inspect_nwb.py       print what's inside the NWB file
+notebooks/01_explore.py  exploration figures
+figures/                 saved plots
+data/                    raw data (gitignored)
 ```
-
-## Plan
-
-- [ ] **Day 1, explore:** raster, PSTH, population heatmap, hand trajectories
-- [ ] **Day 2, preprocess:** bin spikes (20 ms), add spike history, split **by trial** into train/val/test
-- [ ] **Day 3, classic decoders:** Wiener filter and Kalman filter, R² on hand velocity
-- [ ] **Day 4, deep learning:** GRU/LSTM in PyTorch on the same splits
-- [ ] **Day 5, analysis:** neuron-dropping curve, training-data curve, lag sweep
-- [ ] **Day 6, visuals:** predicted vs. actual reaches for all decoders
-- [ ] **Day 7, write-up:** results table, figures, limitations, demo video
-
-## Notes and findings
-
-**Day 1, exploration (182 neurons, 2,295 reaches).** Single-trial spiking is sparse
-and noisy, so decoding has to rely on the combined activity of many neurons rather
-than any one cell. Averaged across trials, neurons begin increasing their firing
-about 200 ms *before* movement onset, and many are directionally tuned (e.g.,
-neuron 181 fires roughly twice as much for upward reaches as for down-left ones);
-their responses first rise together, then diverge by direction. Across the
-population, neurons peak in sequence from before to after movement onset, so the
-population tracks the reach as it unfolds (with the caveat that sorting by peak
-time exaggerates this pattern somewhat). Because maze reaches curve around
-barriers, I decode continuous hand velocity rather than a single reach-direction label.
 
 ## Limitations
 
